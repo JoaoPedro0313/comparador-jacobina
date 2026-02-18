@@ -1,347 +1,638 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comparador de Carteiras — JACOBINA</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap');
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comparador · Cava & Postes</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap');
 
-        :root {
-            --bg: #0d0f14; --surface: #161922; --border: #252a36;
-            --accent: #f5a623; --accent2: #3ecf8e; --danger: #ff5c5c;
-            --muted: #4a5168; --text: #e8eaf0; --text-dim: #7c839a;
-            --added: rgba(62, 207, 142, 0.08); --removed: rgba(255, 92, 92, 0.08);
-            --changed: rgba(245, 166, 35, 0.08); --added-border: #3ecf8e;
-            --removed-border: #ff5c5c; --changed-border: #f5a623;
-        }
+  :root {
+    --bg: #0d0f14;
+    --surface: #161921;
+    --border: #252a35;
+    --accent: #f0a500;
+    --green: #2ecc71;
+    --red: #e74c3c;
+    --blue: #3498db;
+    --muted: #5a6478;
+    --text: #d4dae8;
+    --text-bright: #f0f4ff;
+  }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; min-height: 100vh; line-height: 1.5; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        header { padding: 20px 40px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; background: var(--surface); }
-        .logo-mark { width: 38px; height: 38px; background: var(--accent); display: grid; place-items: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: #000; border-radius: 4px; }
-        header h1 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: -0.5px; }
-        header span { color: var(--text-dim); font-size: 12px; font-family: 'DM Mono', monospace; margin-left: 4px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
 
-        .main { padding: 32px 40px; max-width: 1600px; margin: 0 auto; }
+  header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--accent);
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
 
-        .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
-        .upload-card { background: var(--surface); border: 1.5px dashed var(--border); border-radius: 10px; padding: 30px; text-align: center; cursor: pointer; transition: 0.2s; position: relative; }
-        .upload-card:hover { border-color: var(--accent); background: rgba(245, 166, 35, 0.02); }
-        .upload-card.loaded { border-style: solid; border-color: var(--accent2); background: rgba(62, 207, 142, 0.02); }
-        .upload-card input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-        .upload-label { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .upload-name { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--accent2); margin-top: 8px; word-break: break-all; }
+  header .logo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
 
-        .controls { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; background: var(--surface); padding: 20px; border-radius: 10px; border: 1px solid var(--border); }
-        select { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 6px; cursor: pointer; }
-        .btn-compare { background: var(--accent); color: #000; border: none; padding: 12px 28px; border-radius: 6px; font-family: 'Syne', sans-serif; font-weight: 700; cursor: pointer; transition: 0.2s; margin-left: auto; }
-        .btn-compare:disabled { opacity: 0.3; cursor: not-allowed; }
+  header .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
 
-        .summary-row { display: flex; gap: 16px; margin-bottom: 24px; }
-        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 24px; flex: 1; }
-        .stat-val { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 32px; margin-bottom: 4px; }
-        .stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-family: 'DM Mono', monospace; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 0 40px; }
 
-        .filter-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
-        .tab-btn { background: none; border: none; color: var(--text-dim); padding: 12px 20px; cursor: pointer; border-bottom: 2px solid transparent; transition: 0.2s; }
-        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  /* UPLOAD ZONE */
+  .upload-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 40px 0 30px;
+  }
 
-        .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-        th { padding: 14px; background: rgba(0,0,0,0.2); color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; font-size: 11px; border-bottom: 1px solid var(--border); }
-        td { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.03); }
-        
-        .row-added { border-left: 4px solid var(--accent2); background: var(--added); }
-        .row-removed { border-left: 4px solid var(--danger); background: var(--removed); }
-        .row-changed { border-left: 4px solid var(--accent); background: var(--changed); }
+  .upload-card {
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 36px 24px;
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+    position: relative;
+  }
 
-        .old-val { color: var(--danger); text-decoration: line-through; font-size: 11px; display: block; }
-        .new-val { color: var(--accent2); font-weight: 500; display: block; }
-        
-        .badge { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-family: 'DM Mono', monospace; text-transform: uppercase; }
-        .badge-added { background: rgba(62, 207, 142, 0.2); color: var(--accent2); }
-        .badge-removed { background: rgba(255, 92, 92, 0.2); color: var(--danger); }
-        .badge-changed { background: rgba(245, 166, 35, 0.2); color: var(--accent); }
+  .upload-card:hover { border-color: var(--accent); background: #1c2030; }
+  .upload-card.loaded { border-style: solid; border-color: var(--green); }
 
-        #col-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-        .chip { padding: 4px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; font-size: 11px; cursor: pointer; transition: 0.2s; color: var(--text-dim); }
-        .chip.active { border-color: var(--accent); color: var(--accent); background: rgba(245, 166, 35, 0.1); }
-        
-        #loading { display: none; padding: 40px; text-align: center; font-family: 'DM Mono', monospace; color: var(--accent); }
-    </style>
+  .upload-card input[type=file] {
+    position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
+  }
+
+  .upload-card .tag {
+    display: inline-block;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 2px;
+    margin-bottom: 14px;
+  }
+  .tag.anterior { background: #1e2a3a; color: var(--blue); }
+  .tag.atual { background: #1e2d1e; color: var(--green); }
+
+  .upload-card .icon { font-size: 40px; margin-bottom: 12px; }
+  .upload-card .label { font-size: 14px; color: var(--muted); }
+  .upload-card .filename {
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-bright);
+    word-break: break-all;
+  }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    margin: 8px 0 32px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px 20px;
+    border-top: 3px solid var(--accent);
+  }
+  .stat-card.green { border-top-color: var(--green); }
+  .stat-card.red { border-top-color: var(--red); }
+  .stat-card.blue { border-top-color: var(--blue); }
+
+  .stat-card .val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--text-bright);
+  }
+  .stat-card .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; }
+
+  /* FILTERS */
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .toolbar label { font-size: 12px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+
+  .filter-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 8px 18px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: 'Barlow', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+
+  .search-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: 'Barlow', sans-serif;
+    width: 280px;
+    margin-left: auto;
+  }
+  .search-input:focus { outline: none; border-color: var(--accent); }
+  .search-input::placeholder { color: var(--muted); }
+
+  /* TABLE */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead tr {
+    background: #0d0f14;
+    border-bottom: 2px solid var(--accent);
+  }
+
+  th {
+    padding: 14px 16px;
+    text-align: left;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  tbody tr:hover { background: #1c2030; }
+  tbody tr:last-child { border-bottom: none; }
+
+  td { padding: 12px 16px; vertical-align: middle; }
+
+  .td-title { max-width: 260px; }
+  .td-title .main { color: var(--text-bright); font-weight: 500; }
+  .td-title .pep { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .status-EM_EXECUCAO { background: #1a2e40; color: var(--blue); }
+  .status-ENERGIZADA { background: #1a2d1a; color: var(--green); }
+  .status-PROGRAMADA { background: #2a2a1a; color: #f0e040; }
+  .status-CANCELADA { background: #2d1a1a; color: var(--red); }
+  .status-DEFAULT { background: #1e2030; color: var(--muted); }
+
+  .diff-cell {
+    text-align: center;
+    min-width: 120px;
+  }
+
+  .diff-val { display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+  .old-val {
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--red);
+  }
+
+  .arrow { color: var(--muted); font-size: 12px; }
+
+  .new-val {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-bright);
+  }
+
+  .delta {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 3px;
+    margin-left: 4px;
+  }
+  .delta.pos { background: rgba(46,204,113,0.15); color: var(--green); }
+  .delta.neg { background: rgba(231,76,60,0.15); color: var(--red); }
+  .delta.zero { background: rgba(90,100,120,0.2); color: var(--muted); }
+
+  .no-change { color: var(--muted); text-align: center; font-size: 13px; }
+
+  /* EMPTY */
+  .empty-state {
+    text-align: center;
+    padding: 80px 40px;
+    color: var(--muted);
+  }
+  .empty-state .big { font-size: 60px; margin-bottom: 20px; }
+  .empty-state .msg { font-size: 16px; }
+
+  .section-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-bright);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .btn-compare {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 12px 36px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    display: block;
+    margin: 24px auto;
+  }
+  .btn-compare:hover { opacity: 0.85; }
+  .btn-compare:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .count-tag {
+    background: var(--accent);
+    color: #000;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-left: 6px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: var(--muted);
+    align-items: center;
+  }
+  .legend span { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+</style>
 </head>
 <body>
 
 <header>
-    <div class="logo-mark">J</div>
-    <h1>Comparador de Carteiras <span>// JACOBINA</span></h1>
+  <div>
+    <div class="logo">⚡ Carteira de Obras</div>
+    <div class="subtitle">Comparador de Alterações · Cava & Postes</div>
+  </div>
 </header>
 
-<div class="main">
-    <div class="upload-grid">
-        <div class="upload-card" id="card-a" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'a')">
-            <input type="file" onchange="handleFile(event, 'a')" accept=".xlsx, .xls, .csv">
-            <div class="upload-label">📅 Arquivo Anterior (Base)</div>
-            <div class="upload-name" id="name-a">Arraste ou clique para selecionar</div>
-        </div>
-        <div class="upload-card" id="card-b" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'b')">
-            <input type="file" onchange="handleFile(event, 'b')" accept=".xlsx, .xls, .csv">
-            <div class="upload-label">📅 Arquivo Novo (Comparação)</div>
-            <div class="upload-name" id="name-b">Arraste ou clique para selecionar</div>
-        </div>
-    </div>
+<div class="container">
 
-    <div class="controls">
-        <div>
-            <label class="stat-label">Aba Anterior:</label><br>
-            <select id="sheet-a" onchange="preloadCols()"></select>
-        </div>
-        <div>
-            <label class="stat-label">Aba Nova:</label><br>
-            <select id="sheet-b" onchange="preloadCols()"></select>
-        </div>
-        <div>
-            <label class="stat-label">Coluna Chave (ID):</label><br>
-            <select id="key-col"></select>
-        </div>
-        <button class="btn-compare" id="btn-compare" onclick="compare()" disabled>Executar Comparação</button>
-    </div>
+  <!-- UPLOAD -->
+  <div class="upload-section">
+    <div class="upload-card" id="card-anterior">
+      <input type="file" id="file-anterior" accept=".csv">
+      <div class="tag anterior">Arquivo Anterior</div>
+      <div class="icon">📂</div>
+      <div class="label">Clique para selecionar o CSV anterior</div>
+      <div class="filename" id="name-anterior"></div>
+    </div>
+    <div class="upload-card" id="card-atual">
+      <input type="file" id="file-atual" accept=".csv">
+      <div class="tag atual">Arquivo Atual</div>
+      <div class="icon">📂</div>
+      <div class="label">Clique para selecionar o CSV atual</div>
+      <div class="filename" id="name-atual"></div>
+    </div>
+  </div>
 
-    <div id="col-section" style="display:none; margin-bottom: 24px;">
-        <p class="stat-label">Colunas para Monitorar Alterações:</p>
-        <div id="col-chips"></div>
-    </div>
+  <button class="btn-compare" id="btn-compare" disabled onclick="compare()">
+    🔍 Comparar Arquivos
+  </button>
 
-    <div id="loading">Processando dados...</div>
+  <div id="results" style="display:none">
 
-    <div id="result-area" style="display:none">
-        <div class="summary-row" id="summary-row"></div>
-        
-        <div class="filter-tabs">
-            <button class="tab-btn active" onclick="setFilter('all', this)">Todas</button>
-            <button class="tab-btn" onclick="setFilter('added', this)">Novas</button>
-            <button class="tab-btn" onclick="setFilter('removed', this)">Removidas</button>
-            <button class="tab-btn" onclick="setFilter('changed', this)">Modificadas</button>
-        </div>
+    <!-- STATS -->
+    <div class="section-title">Resumo das Alterações</div>
+    <div class="stats-bar">
+      <div class="stat-card blue">
+        <div class="val" id="stat-total">0</div>
+        <div class="lbl">Obras com alteração</div>
+      </div>
+      <div class="stat-card green">
+        <div class="val" id="stat-cava-inc">0</div>
+        <div class="lbl">Cava aumentou</div>
+      </div>
+      <div class="stat-card red">
+        <div class="val" id="stat-cava-dec">0</div>
+        <div class="lbl">Cava reduziu</div>
+      </div>
+      <div class="stat-card green">
+        <div class="val" id="stat-postes-inc">0</div>
+        <div class="lbl">Postes realiz. aumentou</div>
+      </div>
+      <div class="stat-card red">
+        <div class="val" id="stat-postes-dec">0</div>
+        <div class="lbl">Postes realiz. reduziu</div>
+      </div>
+    </div>
 
-        <div class="table-wrap">
-            <table>
-                <thead id="thead"></thead>
-                <tbody id="tbody"></tbody>
-            </table>
-        </div>
-    </div>
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <label>Filtrar:</label>
+      <button class="filter-btn active" onclick="setFilter('todos', this)">Todos</button>
+      <button class="filter-btn" onclick="setFilter('cava', this)">Cava</button>
+      <button class="filter-btn" onclick="setFilter('postes', this)">Postes Realiz.</button>
+      <button class="filter-btn" onclick="setFilter('implantados', this)">Postes à Implantar</button>
+      <input class="search-input" type="text" id="search" placeholder="🔍 Buscar por obra, PEP..." oninput="renderTable()">
+    </div>
+
+    <div class="legend">
+      <span><span class="dot" style="background:var(--green)"></span> Aumentou</span>
+      <span><span class="dot" style="background:var(--red)"></span> Reduziu</span>
+      <span><span class="dot" style="background:var(--muted)"></span> Sem alteração</span>
+    </div>
+
+    <!-- TABLE -->
+    <div class="section-title">Detalhamento <span class="count-tag" id="count-label">0</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>PEP Obra</th>
+            <th>Título</th>
+            <th>Status</th>
+            <th class="diff-cell">Cava Realizada</th>
+            <th class="diff-cell">Postes Realizados</th>
+            <th class="diff-cell">Postes à Implantar</th>
+            <th class="diff-cell">Postes Previstos</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+
+  </div>
+
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
-    const state = {
-        wbA: null, wbB: null,
-        results: [],
-        filter: 'all',
-        allCols: [],
-        watchCols: [],
-        keyCol: 'NOTA'
-    };
 
-    function handleFile(e, id) {
-        const file = e.target.files[0];
-        if (file) processFile(file, id);
-    }
+let dataAnterior = null;
+let dataAtual = null;
+let allChanges = [];
+let activeFilter = 'todos';
 
-    function handleDrop(e, id) {
-        e.preventDefault();
-        const file = e.dataTransfer.files[0];
-        if (file) processFile(file, id);
-    }
+// --- FILE LOADING ---
+function handleFile(inputId, cardId, nameId, side) {
+  const input = document.getElementById(inputId);
+  input.addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    document.getElementById(nameId).textContent = file.name;
+    document.getElementById(cardId).classList.add('loaded');
 
-    function processFile(file, id) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const data = new Uint8Array(e.target.result);
-            const wb = XLSX.read(data, { type: 'array' });
-            if (id === 'a') state.wbA = wb; else state.wbB = wb;
-            
-            document.getElementById(`name-${id}`).textContent = file.name;
-            document.getElementById(`card-${id}`).classList.add('loaded');
-            
-            const select = document.getElementById(`sheet-${id}`);
-            select.innerHTML = wb.SheetNames.map(s => `<option value="${s}">${s}</option>`).join('');
-            
-            checkReady();
-        };
-        reader.readAsArrayBuffer(file);
-    }
+    Papa.parse(file, {
+      skipEmptyLines: true,
+      complete: function(results) {
+        const rows = results.data;
+        // Find header row (contains "NOTA" and "PEP OBRA")
+        let headerIdx = -1;
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i].map(c => String(c).trim().toUpperCase());
+          if (r.includes('NOTA') && r.some(c => c.includes('PEP'))) {
+            headerIdx = i;
+            break;
+          }
+        }
+        if (headerIdx === -1) { alert('Não encontrei cabeçalho válido no arquivo.'); return; }
 
-    function checkReady() {
-        if (state.wbA && state.wbB) {
-            document.getElementById('btn-compare').disabled = false;
-            preloadCols();
-        }
-    }
+        const headers = rows[headerIdx].map(c => String(c).trim().replace(/\n/g,' ').toUpperCase());
+        const data = [];
+        for (let i = headerIdx + 1; i < rows.length; i++) {
+          const row = rows[i];
+          if (!row.some(c => String(c).trim())) continue;
+          const obj = {};
+          headers.forEach((h, idx) => { obj[h] = String(row[idx] || '').trim(); });
+          if (obj['PEP OBRA'] && obj['PEP OBRA'] !== '') data.push(obj);
+        }
 
-    function getSheetData(wb, sheetName) {
-        const ws = wb.Sheets[sheetName];
-        const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-        
-        // Busca inteligente de cabeçalho
-        let headerIdx = 0;
-        for (let i = 0; i < Math.min(10, raw.length); i++) {
-            if (raw[i].some(c => String(c).toUpperCase().includes('NOTA') || String(c).toUpperCase().includes('PEP'))) {
-                headerIdx = i;
-                break;
-            }
-        }
-        
-        const headers = raw[headerIdx].map(h => String(h || '').trim());
-        const dataRows = raw.slice(headerIdx + 1).filter(r => r.some(c => c !== ''));
-        return { headers, rows: dataRows };
-    }
+        if (side === 'anterior') dataAnterior = data;
+        else dataAtual = data;
 
-    function preloadCols() {
-        const { headers } = getSheetData(state.wbB, document.getElementById('sheet-b').value);
-        state.allCols = headers.filter(h => h);
-        
-        const keySel = document.getElementById('key-col');
-        keySel.innerHTML = state.allCols.map(h => `<option value="${h}" ${h === 'NOTA' ? 'selected' : ''}>${h}</option>`).join('');
-        
-        const defaults = ['STATUS DA OBRA', 'OBS STATUS', 'ENCARREGADO', 'SUPERVISOR', 'MUNICIPIO'];
-        state.watchCols = state.allCols.filter(c => defaults.includes(c.toUpperCase()) || defaults.some(d => c.toUpperCase().includes(d)));
-        
-        renderChips();
-        document.getElementById('col-section').style.display = 'block';
-    }
+        if (dataAnterior && dataAtual) {
+          document.getElementById('btn-compare').disabled = false;
+        }
+      }
+    });
+  });
+}
 
-    function renderChips() {
-        const container = document.getElementById('col-chips');
-        container.innerHTML = state.allCols.map(c => `
-            <div class="chip ${state.watchCols.includes(c) ? 'active' : ''}" onclick="toggleCol('${c}')">${c}</div>
-        `).join('');
-    }
+handleFile('file-anterior', 'card-anterior', 'name-anterior', 'anterior');
+handleFile('file-atual', 'card-atual', 'name-atual', 'atual');
 
-    function toggleCol(col) {
-        const idx = state.watchCols.indexOf(col);
-        if (idx > -1) state.watchCols.splice(idx, 1);
-        else state.watchCols.push(col);
-        renderChips();
-    }
+// --- PARSE NUMBER ---
+function parseNum(v) {
+  if (v === '' || v === null || v === undefined || v === 'nan' || v === 'NaN') return null;
+  const n = parseFloat(String(v).replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
 
-    function compare() {
-        document.getElementById('loading').style.display = 'block';
-        document.getElementById('result-area').style.display = 'none';
+// --- COMPARE ---
+function compare() {
+  const mapAnterior = {};
+  dataAnterior.forEach(r => { mapAnterior[r['PEP OBRA']] = r; });
 
-        setTimeout(() => {
-            const keyCol = document.getElementById('key-col').value;
-            state.keyCol = keyCol;
-            
-            const dataA = getSheetData(state.wbA, document.getElementById('sheet-a').value);
-            const dataB = getSheetData(state.wbB, document.getElementById('sheet-b').value);
+  allChanges = [];
 
-            const keyIdxA = dataA.headers.indexOf(keyCol);
-            const keyIdxB = dataB.headers.indexOf(keyCol);
+  dataAtual.forEach(rowAtual => {
+    const pep = rowAtual['PEP OBRA'];
+    const rowAnt = mapAnterior[pep];
 
-            const mapA = new Map(dataA.rows.map(r => [String(r[keyIdxA] || '').trim(), r]));
-            const mapB = new Map(dataB.rows.map(r => [String(r[keyIdxB] || '').trim(), r]));
+    const cols = [
+      { key: 'CAVA REALIZADA', label: 'Cava' },
+      { key: 'POSTES  REALIZADO', label: 'Postes Realiz.' },
+      { key: 'POSTES   IMPLANTA', label: 'Postes à Imp.' },
+    ];
 
-            const results = [];
-            const cols = state.watchCols;
+    // Try multiple possible column name variants
+    const findVal = (row, keyword) => {
+      if (!row) return null;
+      const k = Object.keys(row).find(k => k.toUpperCase().replace(/\s+/g,'').includes(keyword.replace(/\s+/g,'')));
+      return k ? parseNum(row[k]) : null;
+    };
 
-            // Novas e Alteradas
-            mapB.forEach((rowB, key) => {
-                if (!mapA.has(key)) {
-                    results.push({ type: 'added', key, data: rowB, headers: dataB.headers });
-                } else {
-                    const rowA = mapA.get(key);
-                    const diffs = {};
-                    let hasDiff = false;
+    const cavaAnt = rowAnt ? findVal(rowAnt, 'CAVAREALIZADA') : null;
+    const cavaAtual = findVal(rowAtual, 'CAVAREALIZADA');
+    const postesRealAnt = rowAnt ? findVal(rowAnt, 'POSTESREALIZADO') : null;
+    const postesRealAtual = findVal(rowAtual, 'POSTESREALIZADO');
+    const postesImpAnt = rowAnt ? findVal(rowAnt, 'POSTESIMPLAN') : null;
+    const postesImpAtual = findVal(rowAtual, 'POSTESIMPLAN');
+    const postesPrevAtual = findVal(rowAtual, 'POSTESPREVISTOS');
 
-                    cols.forEach(col => {
-                        const idxA = dataA.headers.indexOf(col);
-                        const idxB = dataB.headers.indexOf(col);
-                        const valA = String(rowA[idxA] || '').trim();
-                        const valB = String(rowB[idxB] || '').trim();
+    const cavaDiff = (cavaAnt !== null || cavaAtual !== null) ? (cavaAtual || 0) - (cavaAnt || 0) : 0;
+    const postesRealDiff = (postesRealAnt !== null || postesRealAtual !== null) ? (postesRealAtual || 0) - (postesRealAnt || 0) : 0;
+    const postesImpDiff = (postesImpAnt !== null || postesImpAtual !== null) ? (postesImpAtual || 0) - (postesImpAnt || 0) : 0;
 
-                        if (valA !== valB) {
-                            diffs[col] = { old: valA, new: valB };
-                            hasDiff = true;
-                        } else {
-                            diffs[col] = { same: valB };
-                        }
-                    });
+    const hasChange = cavaDiff !== 0 || postesRealDiff !== 0 || postesImpDiff !== 0;
+    if (!hasChange && rowAnt) return;
 
-                    if (hasDiff) results.push({ type: 'changed', key, diffs });
-                }
-            });
+    const statusRaw = String(rowAtual['STATUS DA OBRA'] || rowAtual['STATUS'] || '').trim().toUpperCase().replace(/\s+/g,'_');
 
-            // Removidas
-            mapA.forEach((rowA, key) => {
-                if (!mapB.has(key)) {
-                    results.push({ type: 'removed', key, data: rowA, headers: dataA.headers });
-                }
-            });
+    allChanges.push({
+      pep,
+      titulo: rowAtual['TÍTULO'] || rowAtual['TITULO'] || '',
+      status: statusRaw,
+      isNew: !rowAnt,
+      cavaAnt, cavaAtual, cavaDiff,
+      postesRealAnt, postesRealAtual, postesRealDiff,
+      postesImpAnt, postesImpAtual, postesImpDiff,
+      postesPrevAtual
+    });
+  });
 
-            state.results = results;
-            renderSummary();
-            renderTable();
-            
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('result-area').style.display = 'block';
-        }, 100);
-    }
+  // Stats
+  document.getElementById('stat-total').textContent = allChanges.length;
+  document.getElementById('stat-cava-inc').textContent = allChanges.filter(r => r.cavaDiff > 0).length;
+  document.getElementById('stat-cava-dec').textContent = allChanges.filter(r => r.cavaDiff < 0).length;
+  document.getElementById('stat-postes-inc').textContent = allChanges.filter(r => r.postesRealDiff > 0).length;
+  document.getElementById('stat-postes-dec').textContent = allChanges.filter(r => r.postesRealDiff < 0).length;
 
-    function renderSummary() {
-        const counts = {
-            total: state.results.length,
-            added: state.results.filter(r => r.type === 'added').length,
-            removed: state.results.filter(r => r.type === 'removed').length,
-            changed: state.results.filter(r => r.type === 'changed').length
-        };
+  document.getElementById('results').style.display = 'block';
+  renderTable();
 
-        document.getElementById('summary-row').innerHTML = `
-            <div class="stat-card"><div class="stat-val" style="color:var(--text)">${counts.total}</div><div class="stat-label">Total de Alertas</div></div>
-            <div class="stat-card"><div class="stat-val" style="color:var(--accent2)">${counts.added}</div><div class="stat-label">Novas Obras</div></div>
-            <div class="stat-card"><div class="stat-val" style="color:var(--danger)">${counts.removed}</div><div class="stat-label">Removidas</div></div>
-            <div class="stat-card"><div class="stat-val" style="color:var(--accent)">${counts.changed}</div><div class="stat-label">Alterações</div></div>
-        `;
-    }
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
 
-    function setFilter(f, btn) {
-        state.filter = f;
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderTable();
-    }
+// --- FILTER ---
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
 
-    function renderTable() {
-        const tbody = document.getElementById('tbody');
-        const thead = document.getElementById('thead');
-        const filtered = state.filter === 'all' ? state.results : state.results.filter(r => r.type === state.filter);
+// --- RENDER ---
+function renderTable() {
+  const search = document.getElementById('search').value.toLowerCase();
 
-        thead.innerHTML = `<tr><th>Status</th><th>${state.keyCol}</th>${state.watchCols.map(c => `<th>${c}</th>`).join('')}</tr>`;
+  let rows = allChanges.filter(r => {
+    if (search && !r.titulo.toLowerCase().includes(search) && !r.pep.toLowerCase().includes(search)) return false;
+    if (activeFilter === 'cava' && r.cavaDiff === 0) return false;
+    if (activeFilter === 'postes' && r.postesRealDiff === 0) return false;
+    if (activeFilter === 'implantados' && r.postesImpDiff === 0) return false;
+    return true;
+  });
 
-        tbody.innerHTML = filtered.map(r => {
-            let cells = '';
-            if (r.type === 'changed') {
-                cells = state.watchCols.map(c => {
-                    const d = r.diffs[c];
-                    return d.old !== undefined 
-                        ? `<td><span class="old-val">${d.old || '(vazio)'}</span><span class="new-val">${d.new || '(vazio)'}</span></td>`
-                        : `<td>${d.same}</td>`;
-                }).join('');
-            } else {
-                cells = state.watchCols.map(c => {
-                    const idx = r.headers.indexOf(c);
-                    return `<td>${r.data[idx] || ''}</td>`;
-                }).join('');
-            }
+  document.getElementById('count-label').textContent = rows.length;
 
-            const badge = `<span class="badge badge-${r.type}">${r.type === 'added' ? 'Nova' : r.type === 'removed' ? 'Sumiu' : 'Muda'}</span>`;
-            return `<tr class="row-${r.type}"><td>${badge}</td><td style="font-family: 'DM Mono'"><b>${r.key}</b></td>${cells}</tr>`;
-        }).join('');
-    }
+  const tbody = document.getElementById('table-body');
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="big">🔍</div><div class="msg">Nenhuma alteração encontrada com os filtros aplicados</div></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const statusClass = `status-${r.status}`;
+    const statusLabel = r.status.replace(/_/g, ' ');
+    const newTag = r.isNew ? `<span style="color:var(--accent);font-size:11px;font-weight:700;margin-left:6px">NOVA</span>` : '';
+
+    return `<tr>
+      <td><code style="color:var(--accent);font-size:12px">${r.pep}</code></td>
+      <td class="td-title">
+        <div class="main">${r.titulo}${newTag}</div>
+      </td>
+      <td><span class="status-badge ${statusClass} status-DEFAULT">${statusLabel}</span></td>
+      <td class="diff-cell">${diffCell(r.cavaAnt, r.cavaAtual, r.cavaDiff)}</td>
+      <td class="diff-cell">${diffCell(r.postesRealAnt, r.postesRealAtual, r.postesRealDiff)}</td>
+      <td class="diff-cell">${diffCell(r.postesImpAnt, r.postesImpAtual, r.postesImpDiff)}</td>
+      <td class="diff-cell"><span style="color:var(--muted)">${r.postesPrevAtual !== null ? r.postesPrevAtual : '—'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function diffCell(ant, atual, diff) {
+  const antDisplay = ant !== null ? ant : '—';
+  const atualDisplay = atual !== null ? atual : '—';
+
+  if (diff === 0) {
+    return `<span class="no-change">${atualDisplay}</span>`;
+  }
+
+  const sign = diff > 0 ? '+' : '';
+  const cls = diff > 0 ? 'pos' : 'neg';
+
+  return `<div class="diff-val">
+    <span class="old-val">${antDisplay}</span>
+    <span class="arrow">→</span>
+    <span class="new-val">${atualDisplay}</span>
+    <span class="delta ${cls}">${sign}${diff}</span>
+  </div>`;
+}
+
 </script>
-
 </body>
 </html>
